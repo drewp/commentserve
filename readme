@@ -1,0 +1,86 @@
+Web service for storing comments about other resources (e.g. blog posts).
+
+Dependencies:
+  html5lib
+  sparqlhttp
+  cyclone
+  dateutil
+  restkit
+  web.py
+  genshi
+  twisted
+  rdflib
+
+Installation:
+
+1. Get a key at http://www.projecthoneypot.org/ and put it on a line
+in a file called 'priv-honeypotkey'. We send user's IPs to
+projecthoneypot to screen out the ones that have been adding spam
+comments to bogus blogs.
+
+2. Get all the python dependencies, perhaps using virtualenv:
+
+virtualenv .
+bin/easy_install html5lib
+etc
+
+3. Run commentServe:
+
+bin/python commentServe.py
+
+4. See how many comments you have on 'http://example.com':
+
+curl http://localhost:9031/public/commentCount\?post=http://example.com
+0 comments
+
+5. See all those comments with a form to add a new one:
+
+curl http://localhost:9031/public/comments\?post=http://example.com
+
+  <ol xmlns="http://www.w3.org/1999/xhtml" class="commentlist">
+    <li class="newCommentRow">
+      <span class="headercomment">
+	  New comment
+      </span>
+      <form class="newComment" method="post" action="http://example.com/comments">
+	<div>Your name: <input type="text" name="name"/></div>
+	<div>Your email address (won't be redisplayed): <input type="text" name="email"/></div>
+	<div><span style="vertical-align: top">Comment:</span> <textarea name="content" cols="30" rows="3"/></div>
+	<div> <input type="submit" class="postButton" value="Post comment"/></div>
+      </form>
+    </li>
+  </ol>
+<!-- 3.17 ms (2.10 ms in query) -->
+
+6. Start including those fragments into your other pages. Arrange for
+POST requests to get forwarded back to this service, e.g. 
+POST http://example.com/comments 
+-> POST http://localhost:9031/public/comments?uri=http://example.com
+
+
+Store:
+
+Currently the comments are each written to their own RDF file in N3
+format in the commentstore/ directory. This directory is reread all
+the time, so you can edit or remove files in there at will. For my
+setup with very few total comments, this is still working fine. There
+is a 600ms rescan delay after a new comment is added. If that gets
+much slower, I'll probably move the comments to an actual RDF store
+such as Sesame.
+
+Other features without documentation:
+
+- you can process the comment text on the way in
+
+- If you have a proxy that applies a safe X-Foaf-Agent header on the
+  way in to indicate that a user has been logged in, the comment field
+  will announce who the user is. By requesting /comments instead of
+  /public/comments, you can filter out the comment display for users
+  who have not logged in.
+
+- New comments are announced via my c3po messaging project:
+  http://bigasterisk.com/darcs/?r=c3po;a=tree
+
+- Anonymous users are given a random new FOAF URI and their IP
+  addresses are added to the RDF graph too.
+

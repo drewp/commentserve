@@ -1,0 +1,57 @@
+<div py:strip="True" xmlns="http://www.w3.org/1999/xhtml"
+xmlns:py="http://genshi.edgewall.org/"
+>
+
+  <ol class="commentlist">
+    <li py:for="row in rows">
+      <span class="headercomment">${row['who'] or "Anonymous"} - ${agoString(row['when'])}</span>
+      <div class="commenttext">
+	${Markup(row['content'])}
+      </div>
+    </li>
+
+    <li class="newCommentRow">
+      <span class="headercomment">
+	<py:if test="you is not None">${you} - new comment</py:if>
+	  <py:if test="you is None">New comment</py:if>
+      </span>
+      <form class="newComment" method="post" action="${parent}/comments">
+	
+	<div py:if="you is None">Your name: <input type="text" name="name"/></div>
+	<div py:if="you is None">Your email address (won't be redisplayed): <input type="text" name="email"/></div>
+
+	<div><span py:if="you is None" style="vertical-align: top">Comment:</span> <textarea name="content" cols="30" rows="3" /></div>
+	<div><span py:if="0 and public">How many letters are in the word 'comment'? <input type="text" name="content2" size="3"/></span> <input type="submit" class="postButton" value="Post comment"/></div>
+      </form>
+    </li>
+
+  </ol>
+  <script py:if="includeJs" type="text/javascript">
+   // ' <![CDATA[ 
+       $(window).load(function() { 
+	   $('form.newComment').submit(function (ev) {
+	       var form=$(this);
+	       form.find('.postButton')
+		   .attr("value", "Saving...")
+		   .attr('disabled', true);
+	       var action = form.attr('action');
+	       $.ajax({
+		   data: form.serializeArray(),
+		   error: function (xhr, status, err) {
+		       form.find('.postButton').attr("value", "failed")
+		   },
+		   success: function (data, status, xhr) {
+		       var container = form.closest(".commentlist").parent();
+		       container.load(action);
+		       return false;
+		   },
+		   url: action,
+		   type: "POST"
+	       });
+	       return false;
+	   });
+
+    }); 
+    // ]]>
+  </script>
+</div>
