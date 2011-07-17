@@ -269,6 +269,7 @@ class CommentCount(cyclone.web.RequestHandler):
         
 def commentStatements(user, commentUri, realComment):
     # here you can put more processing on the comment text
+    realComment = realComment.replace("\r", "") # rdflib n3 can't read these back
     return [(commentUri, CONTENT.encoded, realComment)]  
     
 class Index(cyclone.web.RequestHandler):
