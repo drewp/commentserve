@@ -23,7 +23,7 @@ class Db(object):
                   glob.glob("commentstore/*.nt")):
             mtimes.append(os.path.getmtime(f))
 
-        if mtimes == self.lastTimes:
+        if mtimes == self.lastTimes and hasattr(self, 'currentGraph'):
             return self.currentGraph
         self.lastTimes = mtimes
 
