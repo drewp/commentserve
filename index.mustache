@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>commentServe</title>
+    <style type="text/css" media="all">
+      /* <![CDATA[ */
+body {
+ font-family: sans-serif;
+font-size: 10px;
+}
+      pre {
+	  height: 7em;
+	  overflow: auto;
+	  width: 100%;
+      }
+#recent > div {
+ border-bottom: 1px solid gray;
+}
+      /* ]]> */
+    </style>
+
+  </head>
+  <body>
+    <h1>recent comments</h1>
+    <div id="recent">
+      {{#recent}}
+      <div>
+	<form method="post" action="spam">
+	  <button type="submit">Mark spam</button> {{isSpam}}
+	  <input type="hidden" name="uri" value="{{uri}}"/>
+	  <input type="hidden" name="docId" value="{{docId}}"/>
+	  {{created}} <a href="{{creator}}">{{creator}}</a> on <a href="{{parent}}">{{parent}}</a>
+	  <pre>{{content}}</pre>
+	</form>
+      </div>
+      {{/recent}}
+    </div>
+    
+  </body>
+</html>

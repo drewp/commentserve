@@ -77,10 +77,12 @@ class DbMongo(_shared):
         self.mongo = Connection('bang', 27017, tz_aware=True)['comment']
 
         self.lastTime = 0
+        self.notSpam = {"type":{"$ne":"spam"}}
 
     def getGraph(self):
 
-        newDoc = self.mongo['comment'].find_one(sort=[('created', -1)])
+        newDoc = self.mongo['comment'].find_one(self.notSpam,
+                                                sort=[('created', -1)])
         newDocTime = time.mktime(newDoc['created'].astimezone(tzlocal()).timetuple()) if newDoc is not None else 0
 
         mtime = os.path.getmtime("/my/proj/openid_proxy/access.n3")
@@ -88,7 +90,7 @@ class DbMongo(_shared):
         if newDocTime > self.lastTime or mtime > self.lastTime:
             g = ConjunctiveGraph()
             g.parse("/my/proj/openid_proxy/access.n3", format="n3")
-            for doc in self.mongo['comment'].find():
+            for doc in self.mongo['comment'].find(self.notSpam):
                 g.parse(StringInputSource(doc['n3'].encode('utf8')),
                         format="n3")
 
@@ -110,4 +112,39 @@ class DbMongo(_shared):
 
         doc['n3'] = g.serialize(format="n3")
         self.mongo['comment'].insert(doc)
+
+    def getRecentComments(self, n=10, withSpam=False):
+        self.mongo['comment'].ensure_index('created')
+        spec = {}
+        if not withSpam:
+            spec = self.notSpam
+        for doc in self.mongo['comment'].find(spec, limit=n,
+                                              sort=[('created', -1)]):
+            g = ConjunctiveGraph()
+            g.parse(StringInputSource(doc['n3'].encode('utf8')), format='n3')
+            parent, _, uri = g.triples((None, SIOC.has_reply, None)).next()
+            created = g.value(uri, DCTERMS.created)
+            content = g.value(uri, CONTENT.encoded)
+            creator = g.value(uri, SIOC.has_creator)
+            docId = str(doc['_id'])
+            isSpam = doc.get('type', '')
+            yield vars()
+
+    def setType(self, docId, type):
+        from bson import ObjectId
+        self.mongo['comment'].update({'_id' : ObjectId(docId)},
+                                     {"$set" : {"type" : type}},
+                                     multi=False, safe=True)
+        self.lastTime = 0
             
+    """
+    what this api should be:
+
+    saveComment(parent, content, time, user=foaf_or_public, publicName, publicEmail, moreHeaders)
+    getCommentsForParent(parent, withSpam=False) -> [(uri, t, user, userFoafName, content, isSpam), ...]
+    getCommentCount(parent) -> n
+    setSpam(uri, isSpam)
+    getRecentComments(n) -> [(uri, t, user, content, isSpam)]
+    getCommentsByUser(user, paging)
+    """
+    

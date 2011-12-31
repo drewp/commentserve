@@ -13,7 +13,7 @@ see also:
 
 """
 
-import web, time, logging
+import web, time, logging, pystache, traceback
 from datetime import datetime
 from uuid import uuid4
 from html5lib import html5parser, sanitizer
@@ -240,7 +240,7 @@ class Comments(cyclone.web.RequestHandler):
             c3po.post(
                 path='', payload={
                     'user': listener,
-                    'msg': '%s comment from %s' % (parent, user),
+                    'msg': '%s comment from %s (http://10.1.0.1:9031/)' % (parent, user),
                     'mode': mode,
                 },
                 # shouldn't this be automatic?
@@ -266,7 +266,23 @@ class CommentCount(cyclone.web.RequestHandler):
         count = len(list(rows))
         self.set_header("Content-Type", "text/plain")
         self.write("%s comments" % count if count != 1 else "1 comment")
+
+class Root(cyclone.web.RequestHandler):
+    def get(self):
+        recent = self.settings.db.getRecentComments(25, withSpam=False)
+        self.write(pystache.render(open("index.mustache").read(),
+                                   dict(recent=recent)))
+
+class Spam(cyclone.web.RequestHandler):
+    def post(self):
+        try:
+            self.settings.db.setType(docId=self.get_argument('docId'), type="spam")
+        except Exception:
+            traceback.print_exc()
+            raise
+        self.redirect("/")
         
+
 def commentStatements(user, commentUri, realComment):
     # here you can put more processing on the comment text
     realComment = Literal(realComment.replace("\r", ""), datatype=realComment.datatype) # rdflib n3 can't read these back
@@ -284,8 +300,12 @@ class Application(cyclone.web.Application):
             (r'/(public)/comments', Comments),
             (r'/commentCount', CommentCount),
             (r'/(public)/commentCount', CommentCount),
+            (r'/', Root),
+            (r'/spam', Spam),
         ]
-        cyclone.web.Application.__init__(self, handlers, db=db)
+        cyclone.web.Application.__init__(self, handlers,
+                                         db=db,
+                                         template_path=".")
 
 if __name__ == '__main__':
     db = DbMongo()
