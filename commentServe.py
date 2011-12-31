@@ -102,7 +102,7 @@ def sanitize_html(stream, srcAttr=False):
                    parseFragment(stream).childNodes])
     return ret
 
-def spamCheck(content):
+def spamCheck(article, content):
     if content.lower().count("<a href") > 4:
         log.error("too many links in %r" % content)
         raise ValueError("too many links")
@@ -187,7 +187,7 @@ class Comments(cyclone.web.RequestHandler):
         if contentArg.strip() == 'test':
             return "not adding test comment"
 
-        spamCheck(contentArg)
+        spamCheck(parent, contentArg)
             
         content = Literal(contentArg, datatype=RDF.XMLLiteral)
 
@@ -269,7 +269,7 @@ class CommentCount(cyclone.web.RequestHandler):
         
 def commentStatements(user, commentUri, realComment):
     # here you can put more processing on the comment text
-    realComment = realComment.replace("\r", "") # rdflib n3 can't read these back
+    realComment = Literal(realComment.replace("\r", ""), datatype=realComment.datatype) # rdflib n3 can't read these back
     return [(commentUri, CONTENT.encoded, realComment)]  
     
 class Index(cyclone.web.RequestHandler):
