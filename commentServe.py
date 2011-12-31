@@ -13,7 +13,7 @@ see also:
 
 """
 
-import web, time, random, logging
+import web, time, logging
 from datetime import datetime
 from uuid import uuid4
 from html5lib import html5parser, sanitizer
@@ -26,7 +26,7 @@ import restkit
 from dateutil.tz import tzlocal
 import cyclone.web
 from twisted.internet import reactor
-from db import Db
+from db import DbMongo
 
 SIOC = Namespace("http://rdfs.org/sioc/ns#")
 CONTENT = Namespace("http://purl.org/rss/1.0/modules/content/")
@@ -288,6 +288,9 @@ class Application(cyclone.web.Application):
         cyclone.web.Application.__init__(self, handlers, db=db)
 
 if __name__ == '__main__':
-    db = Db()
+    db = DbMongo()
+    from twisted.python.log import startLogging
+    import sys
+    startLogging(sys.stdout)
     reactor.listenTCP(9031, Application(db))
     reactor.run()
