@@ -276,7 +276,8 @@ class CommentCount(cyclone.web.RequestHandler):
 
 class Root(cyclone.web.RequestHandler):
     def get(self):
-        recent = self.settings.db.getRecentComments(25, withSpam=False)
+        recent = self.settings.db.getRecentComments(10, notOlderThan=60,
+                                                    withSpam=False)
         self.write(pystache.render(open("index.mustache").read(),
                                    dict(recent=recent)))
 

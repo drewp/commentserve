@@ -1,4 +1,4 @@
-import time, glob, os, tempfile, logging
+import time, glob, os, tempfile, logging, datetime
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 import rdflib
@@ -113,11 +113,15 @@ class DbMongo(_shared):
         doc['n3'] = g.serialize(format="n3")
         self.mongo['comment'].insert(doc)
 
-    def getRecentComments(self, n=10, withSpam=False):
+    def getRecentComments(self, n=10, notOlderThan=None, withSpam=False):
         self.mongo['comment'].ensure_index('created')
         spec = {}
         if not withSpam:
             spec = self.notSpam
+        if notOlderThan is not None:
+            now = datetime.datetime.now(tzlocal())
+            spec['created'] = {
+                '$gt' : now - datetime.timedelta(days=notOlderThan)}
         for doc in self.mongo['comment'].find(spec, limit=n,
                                               sort=[('created', -1)]):
             g = ConjunctiveGraph()
