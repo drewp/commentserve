@@ -103,11 +103,18 @@ def sanitize_html(stream, srcAttr=False):
     return ret
 
 def spamCheck(article, content):
-    if content.lower().count("<a href") > 4:
+    if content.lower().count("<a href") > 0:
         log.error("too many links in %r" % content)
         raise ValueError("too many links")
     if '[url=' in content:
         raise ValueError("url markup is too suspicious")
+    if article in [URIRef("http://drewp.quickwitretort.com/2008/02/22/0"),
+                   URIRef("http://drewp.quickwitretort.com/2010/07/03/0"),
+                   ]:
+        raise ValueError("spam flood")
+    for pat in ['viagra', 'cialis', 'probleme de sante', 'pfizer', 'pilules']:
+        if pat in content.lower():
+            raise ValueError("spam pattern")
 
 class Comments(cyclone.web.RequestHandler):
     def get(self, public=False):
