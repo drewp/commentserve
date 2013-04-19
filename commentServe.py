@@ -300,6 +300,10 @@ class Index(cyclone.web.RequestHandler):
         self.set_header("Content-Type", "text/plain")
         self.write("commentServe")
 
+class Fav(cyclone.web.RequestHandler):
+    def get(self):
+        self.write(open("favicon.ico").read())
+
 class Application(cyclone.web.Application):
     def __init__(self, db):
         handlers = [
@@ -308,6 +312,7 @@ class Application(cyclone.web.Application):
             (r'/commentCount', CommentCount),
             (r'/(public)/commentCount', CommentCount),
             (r'/', Root),
+            (r'/favicon.ico', Fav),
             (r'/spam', Spam),
         ]
         cyclone.web.Application.__init__(self, handlers,
