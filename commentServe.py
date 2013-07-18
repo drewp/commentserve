@@ -108,6 +108,8 @@ def spamCheck(article, content):
         raise ValueError("too many links")
     if '[url=' in content:
         raise ValueError("url markup is too suspicious")
+    if content.split()[-1].startswith(('http://', 'https://')):
+        raise ValueError("please don't end with a link")
     if article in [URIRef("http://drewp.quickwitretort.com/2008/02/22/0"),
                    URIRef("http://drewp.quickwitretort.com/2010/07/03/0"),
                    ]:
