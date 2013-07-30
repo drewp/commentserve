@@ -2,20 +2,9 @@ import time, glob, os, tempfile, logging, datetime
 from dateutil.parser import parse
 from dateutil.tz import tzlocal
 import rdflib
-rdflib.plugin.register('sparql', rdflib.query.Processor,
-                       'rdfextras.sparql.processor', 'Processor')
-rdflib.plugin.register('sparql', rdflib.query.Result,
-                       'rdfextras.sparql.query', 'SPARQLQueryResult')
-
 from rdflib.graph import ConjunctiveGraph
 from rdflib import Namespace
 from rdflib.parser import StringInputSource
-import sys
-sys.path.append("/my/proj/sparqlhttp")
-import rdflib
-if rdflib.__version__ == '3.2.0-dev':
-    rdflib.__version__ = '3.2.0' # workaround for sparqlhttp weakness
-from sparqlhttp.dictquery import Graph2
 
 log = logging.getLogger("db")
 
@@ -25,9 +14,12 @@ DCTERMS = Namespace("http://purl.org/dc/terms/")
 XS = Namespace("http://www.w3.org/2001/XMLSchema#")
 FOAF = Namespace("http://xmlns.com/foaf/0.1/")
 
+initNs = dict(sioc=SIOC, content=CONTENT, foaf=FOAF, dcterms=DCTERMS, xs=XS)
+
 class _shared(object):
-    def queryd(self, *args, **kw):
-        return self.getGraph().queryd(*args, **kw)
+    def query(self, *args, **kw):
+        kw['initNs'] = initNs
+        return self.getGraph().query(*args, **kw)
     
     def value(self, *args, **kw):
         return self.getGraph().value(*args, **kw)
@@ -50,20 +42,16 @@ class Db(_shared):
 
         tf = tempfile.NamedTemporaryFile()
         os.system("cat /my/proj/openid_proxy/access.n3 commentstore/*.nt > %s" % tf.name)
-        g = ConjunctiveGraph()
-        g.parse(tf.name, format="n3")
-
-        self.currentGraph = Graph2(g, initNs=dict(sioc=SIOC, content=CONTENT,
-                                                  foaf=FOAF, dcterms=DCTERMS,
-                                                  xs=XS))
-
+        self.currentGraph = ConjunctiveGraph()
+        self.currentGraph.parse(tf.name, format="n3")
+      
         log.info("reloaded comments from disk in %f sec" % (time.time() - t1))
 
         return self.currentGraph
         
     def writeFile(self, stmts, ctx, fileWords):
         outfile = "commentstore/post-%s.nt" % ("-".join(fileWords))
-        graph = Graph2(ConjunctiveGraph())
+        graph = ConjunctiveGraph()
 
         graph.add(*stmts, **{'context' : ctx})
         graph.graph.serialize(outfile, format='n3')
@@ -94,8 +82,7 @@ class DbMongo(_shared):
                 g.parse(StringInputSource(doc['n3'].encode('utf8')),
                         format="n3")
 
-            self.currentGraph = Graph2(g, initNs=dict(
-                sioc=SIOC, content=CONTENT, foaf=FOAF, dcterms=DCTERMS, xs=XS))
+            self.currentGraph = g
             self.lastTime = max(newDocTime, mtime)
         return self.currentGraph
         
@@ -111,7 +98,7 @@ class DbMongo(_shared):
                 doc['created'] = parse(s[2])
 
         doc['n3'] = g.serialize(format="n3")
-        self.mongo['comment'].insert(doc)
+        self.mongo['comment'].insert(doc, safe=True)
 
     def getRecentComments(self, n=10, notOlderThan=None, withSpam=False):
         self.mongo['comment'].ensure_index('created')

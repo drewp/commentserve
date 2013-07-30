@@ -159,7 +159,7 @@ class Comments(cyclone.web.RequestHandler):
 
     def findComments(self, post):
         rows = []
-        for row in self.settings.db.queryd("""
+        for who, when, content in self.settings.db.query("""
                SELECT DISTINCT ?who ?when ?content WHERE {
                  ?parent sioc:has_reply [
                    sioc:has_creator ?cr;
@@ -168,7 +168,7 @@ class Comments(cyclone.web.RequestHandler):
                    ]
                  OPTIONAL { ?cr foaf:name ?who }
                } ORDER BY ?when""", initBindings={"parent" : post}):
-            row['content'] = sanitize_html(row['content'])
+            row = dict(who=who, when=when, content=sanitize_html(content))
             rows.append(row)
         log.debug("found %s rows with parent %r" % (len(rows), post))
         return rows
@@ -268,7 +268,7 @@ class CommentCount(cyclone.web.RequestHandler):
 
         post = URIRef(self.get_argument("post"))
 
-        rows = self.settings.db.queryd("""
+        rows = self.settings.db.query("""
                SELECT DISTINCT ?r WHERE {
                  ?parent sioc:has_reply ?r
                }""", initBindings={"parent" : post})
