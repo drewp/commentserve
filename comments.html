@@ -15,7 +15,7 @@ xmlns:py="http://genshi.edgewall.org/"
 	<py:if test="you is not None">${you} - new comment</py:if>
 	  <py:if test="you is None">New comment</py:if>
       </span>
-      <form class="newComment" method="post" action="${parent}/comments">
+      <form class="newComment" method="post" action="${toHttps(parent)}/comments">
 	
 	<div py:if="you is None">Your name: <input type="text" name="name"/></div>
 	<div py:if="you is None">Your email address (won't be redisplayed): <input type="text" name="email"/></div>

@@ -149,6 +149,7 @@ class Comments(cyclone.web.RequestHandler):
             includeJs=self.get_argument("js", default="0") != "0",
             public=public,
             parent=post,
+            toHttps=lambda uri: uri.replace('http://', 'https://'),
             agoString=agoString,
             you=self.settings.db.value(foafAgent, FOAF.name) if foafAgent else None,
             rows=rows,
@@ -182,6 +183,7 @@ class Comments(cyclone.web.RequestHandler):
         """
         parent = self.get_argument('post', default=None) or self.get_argument("uri")
         assert parent is not None
+        # maybe a legacy problem here with http/https, but blaster is still sending http
         parent = URIRef(parent)
 
         # this might be failing on ariblog, but that one is already safe
